@@ -21,14 +21,7 @@ const colorList = [
 async function setTabGroup() {
     // targetTabConditions の条件に該当するタブリスト
     const tabs = await chrome.tabs.query(targetTabConditions);
-    // ドメイン名ごとのタブIDを格納する連想配列を定義
-    const tabDict = {};
-    // 各タブのタブIDとドメイン名を連想配列に格納
-    tabs.forEach(tab => {
-        if (!(tab.windowId in tabDict)) tabDict[tab.windowId] = {};
-        hostname = new URL(new URL(tab.url)).hostname;
-        hostname in tabDict[tab.windowId] ? tabDict[tab.windowId][hostname].push(tab.id) : tabDict[tab.windowId][hostname] = [tab.id];
-    });
+    const tabDict = createTabDict(tabs);
     // groupCount の値を元にタブグループのカラーを確定
     let groupCount = 0;
     for (let windowId in tabDict) {
@@ -58,13 +51,24 @@ async function setTabGroup() {
             else {
                 try {
                     const groupId = await chrome.tabs.ungroup(tabDict[windowId][hostname][0]);
-                } catch (e) {
-                    console.log(e);
-                }
+                } catch {}
             }
         }
     }
 };
+
+// ウインドウ、ドメイン名ごとのタブIDを格納する連想配列を生成
+function createTabDict(tabs) {
+    // ウインドウ、ドメイン名ごとのタブIDを格納する連想配列を定義
+    let tabDict = {};
+    // 各タブのタブIDとドメイン名を連想配列に格納
+    tabs.forEach(tab => {
+        if (!(tab.windowId in tabDict)) tabDict[tab.windowId] = {};
+        hostname = new URL(new URL(tab.url)).hostname;
+        hostname in tabDict[tab.windowId] ? tabDict[tab.windowId][hostname].push(tab.id) : tabDict[tab.windowId][hostname] = [tab.id];
+    });
+    return tabDict;
+}
 
 // タブ新規作成、更新処理のリスナー
 chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
@@ -73,15 +77,15 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
 
 // タブ削除時のリスナー
 chrome.tabs.onRemoved.addListener(function (tabId, removeInfo) {
-    setTabGroup(tabId);
+    setTabGroup();
 });
 
 chrome.tabs.onActivated.addListener(function (activeInfo) {
     setTimeout(function () {
         setTabGroup(activeInfo.tabId);
-    }, 100);
+    }, 500);
 });
 
 chrome.tabs.onDetached.addListener(function (tabId, detachInfo) {
-    setTabGroup(tabId);
+    setTabGroup();
 });

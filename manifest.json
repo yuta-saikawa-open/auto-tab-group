@@ -2,7 +2,7 @@
     "name": "Auto Tab Group",
     "action": {},
     "manifest_version": 3,
-    "version": "1.1",
+    "version": "1.2",
     "description": "自動で同じドメインのタブをまとめます。",
     "permissions": [
         "tabs",
